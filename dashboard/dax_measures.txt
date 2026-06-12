@@ -1,0 +1,240 @@
+// ============================================================
+// Power BI — DAX Measures
+// In Power BI Desktop: Home > New Measure, paste each block.
+// Create a dedicated "Measures" table: Modeling > New Table > Measures = {}
+// ============================================================
+
+
+// ════════════════════════════════════════════════════════════
+// KPI MEASURES — Page 1: Industry Overview
+// ════════════════════════════════════════════════════════════
+
+// Total Industry AUM (latest snapshot, lakh crore)
+Total AUM (Lakh Cr) =
+VAR LatestDate = MAXX(fact_AUM, [date])
+RETURN
+    DIVIDE(
+        SUMX(FILTER(fact_AUM, [date] = LatestDate), [aum_crore]),
+        1e5,
+        0
+    )
+
+// Latest Monthly SIP Inflow (crore)
+Latest SIP Inflow (Cr) =
+VAR LatestMonth = MAXX(fact_SIPInflows, [month])
+RETURN
+    CALCULATE(
+        SUM(fact_SIPInflows[sip_inflow_crore]),
+        fact_SIPInflows[month] = LatestMonth
+    )
+
+// Total Folios Latest (crore)  — from folio CSV loaded separately or use static
+Total Folios (Cr) = 26.12
+
+// Total Schemes
+Total Schemes =
+    DISTINCTCOUNT(dim_Fund[amfi_code])
+
+// SIP YoY Growth (latest available)
+SIP YoY Growth % =
+VAR LatestMonth = MAXX(fact_SIPInflows, [month])
+RETURN
+    CALCULATE(
+        AVERAGE(fact_SIPInflows[yoy_growth_pct]),
+        fact_SIPInflows[month] = LatestMonth
+    )
+
+// Industry AUM for trend chart (sum across all fund houses per date)
+Industry AUM Trend =
+    SUMX(
+        VALUES(fact_AUM[date]),
+        CALCULATE(SUM(fact_AUM[aum_crore]))
+    )
+
+// AUM in Lakh Crore (for display)
+AUM Lakh Crore =
+    DIVIDE(SUM(fact_AUM[aum_crore]), 1e5)
+
+
+// ════════════════════════════════════════════════════════════
+// PERFORMANCE MEASURES — Page 2: Fund Performance
+// ════════════════════════════════════════════════════════════
+
+// Latest NAV per fund
+Latest NAV =
+    CALCULATE(
+        MAX(fact_NAV[nav]),
+        fact_NAV[date] = MAXX(fact_NAV, [date])
+    )
+
+// Average Sharpe Ratio
+Avg Sharpe Ratio =
+    AVERAGE(fact_Performance[sharpe_ratio])
+
+// Average 3-Year Return
+Avg 3yr Return % =
+    AVERAGE(fact_Performance[return_3yr_pct])
+
+// Average Expense Ratio
+Avg Expense Ratio % =
+    AVERAGE(fact_Performance[expense_ratio_pct])
+
+// Funds beating benchmark (return_3yr > benchmark_3yr)
+Funds Beating Benchmark =
+    COUNTROWS(
+        FILTER(
+            fact_Performance,
+            [return_3yr_pct] > [benchmark_3yr_pct]
+        )
+    )
+
+// For scatter plot: Risk label
+Risk Label =
+    "StdDev: " & FORMAT(AVERAGE(fact_Performance[std_dev_ann_pct]), "0.0") & "%"
+
+// Composite Score (from scorecard)
+Avg Composite Score =
+    AVERAGE(fact_Scorecard[composite_score])
+
+// NAV Return % (for NAV line)
+NAV Return % =
+VAR StartNAV =
+    CALCULATE(
+        MIN(fact_NAV[nav]),
+        DATESINPERIOD(fact_NAV[date], MIN(fact_NAV[date]), 1, DAY)
+    )
+VAR EndNAV = MAX(fact_NAV[nav])
+RETURN
+    DIVIDE(EndNAV - StartNAV, StartNAV) * 100
+
+// Daily return (used in tooltips)
+Avg Daily Return % =
+    AVERAGEX(
+        fact_NAV,
+        DIVIDE(fact_NAV[nav] - EARLIER(fact_NAV[nav]), EARLIER(fact_NAV[nav]))
+    )
+
+
+// ════════════════════════════════════════════════════════════
+// TRANSACTION MEASURES — Page 3: Investor Analytics
+// ════════════════════════════════════════════════════════════
+
+// Total transaction amount
+Total Amount (Cr) =
+    DIVIDE(SUM(fact_Transactions[amount_inr]), 1e7)
+
+// Total SIP amount
+SIP Amount (Cr) =
+    CALCULATE(
+        DIVIDE(SUM(fact_Transactions[amount_inr]), 1e7),
+        fact_Transactions[transaction_type] = "SIP"
+    )
+
+// Total Lumpsum amount
+Lumpsum Amount (Cr) =
+    CALCULATE(
+        DIVIDE(SUM(fact_Transactions[amount_inr]), 1e7),
+        fact_Transactions[transaction_type] = "Lumpsum"
+    )
+
+// Total Redemption amount
+Redemption Amount (Cr) =
+    CALCULATE(
+        DIVIDE(SUM(fact_Transactions[amount_inr]), 1e7),
+        fact_Transactions[transaction_type] = "Redemption"
+    )
+
+// Transaction count
+Transaction Count =
+    COUNTROWS(fact_Transactions)
+
+// Average SIP amount
+Avg SIP Amount =
+    CALCULATE(
+        AVERAGE(fact_Transactions[amount_inr]),
+        fact_Transactions[transaction_type] = "SIP"
+    )
+
+// SIP count
+SIP Count =
+    CALCULATE(
+        COUNTROWS(fact_Transactions),
+        fact_Transactions[transaction_type] = "SIP"
+    )
+
+// SIP % of total transactions
+SIP % of Total =
+    DIVIDE(
+        [SIP Count],
+        [Transaction Count]
+    ) * 100
+
+// Monthly transaction volume
+Monthly Transaction Volume =
+    CALCULATE(
+        DIVIDE(SUM(fact_Transactions[amount_inr]), 1e7),
+        ALLEXCEPT(fact_Transactions, fact_Transactions[Month])
+    )
+
+// T30 share
+T30 Share % =
+    DIVIDE(
+        CALCULATE(COUNTROWS(fact_Transactions), fact_Transactions[city_tier] = "T30"),
+        COUNTROWS(fact_Transactions)
+    ) * 100
+
+
+// ════════════════════════════════════════════════════════════
+// SIP & MARKET MEASURES — Page 4: SIP & Market Trends
+// ════════════════════════════════════════════════════════════
+
+// SIP Inflow for bar chart
+SIP Inflow (Cr) =
+    SUM(fact_SIPInflows[sip_inflow_crore])
+
+// Active SIP accounts
+Active SIP Accounts (Cr) =
+    AVERAGE(fact_SIPInflows[active_sip_accounts_crore])
+
+// New SIP accounts
+New SIP Accounts (Lakh) =
+    SUM(fact_SIPInflows[new_sip_accounts_lakh])
+
+// YoY growth formatted
+SIP YoY Growth Label =
+    FORMAT(AVERAGE(fact_SIPInflows[yoy_growth_pct]), "0.0") & "% YoY"
+
+// SIP AUM
+SIP AUM (Lakh Cr) =
+    AVERAGE(fact_SIPInflows[sip_aum_lakh_crore])
+
+// Running total SIP
+Running Total SIP =
+    CALCULATE(
+        SUM(fact_SIPInflows[sip_inflow_crore]),
+        FILTER(
+            ALL(fact_SIPInflows[month]),
+            fact_SIPInflows[month] <= MAX(fact_SIPInflows[month])
+        )
+    )
+
+
+// ════════════════════════════════════════════════════════════
+// UTILITY MEASURES
+// ════════════════════════════════════════════════════════════
+
+// Dynamic title for selected fund house
+Selected Fund House =
+    IF(
+        ISFILTERED(dim_Fund[fund_house]),
+        SELECTEDVALUE(dim_Fund[fund_house], "Multiple"),
+        "All Fund Houses"
+    )
+
+// Rank label
+Scorecard Rank Label =
+    "Rank #" & FORMAT(MIN(fact_Scorecard[overall_rank]), "0")
+
+// Expense ratio flag
+Low Expense Flag =
+    IF(AVERAGE(fact_Performance[expense_ratio_pct]) < 1.0, "Low TER ✓", "")

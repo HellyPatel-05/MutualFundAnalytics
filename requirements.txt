@@ -1,0 +1,13 @@
+pandas
+numpy
+matplotlib
+seaborn
+plotly
+sqlalchemy
+requests
+scipy
+jupyter
+kaleido
+Pillow
+reportlab
+python-pptx

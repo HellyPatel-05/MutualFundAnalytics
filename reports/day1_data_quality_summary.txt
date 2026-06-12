@@ -1,0 +1,9 @@
+AMFI Scheme Codes
+
+AMFI (Association of Mutual Funds in India) assigns a unique AMFI code to each mutual fund scheme.
+
+These codes act as unique identifiers and help in tracking, managing, and linking mutual fund data across different datasets.
+
+In this project, AMFI codes are used to connect information between the fund_master dataset and the nav_history dataset.
+
+Using AMFI codes ensures that NAV records, fund details, and scheme information correspond to the correct mutual fund scheme.

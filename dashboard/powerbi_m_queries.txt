@@ -1,0 +1,232 @@
+// ============================================================
+// Power BI — M Query Code for All 8 Tables
+// Paste each block into: Home > Transform Data > New Source > Blank Query
+// Then open Advanced Editor and replace content with the code below.
+// Change BASE_PATH to your actual folder path.
+// ============================================================
+
+// ── STEP 0: Set your base path ───────────────────────────────
+// Replace D:\MutualFundAnalytics\ with your actual path in every query below.
+
+
+// ════════════════════════════════════════════════════════════
+// TABLE 1: dim_Fund  (Query name: dim_Fund)
+// ════════════════════════════════════════════════════════════
+let
+    Source = Csv.Document(
+        File.Contents("D:\MutualFundAnalytics\data\processed\01_fund_master_cleaned.csv"),
+        [Delimiter=",", Columns=15, Encoding=65001, QuoteStyle=QuoteStyle.None]
+    ),
+    Headers       = Table.PromoteHeaders(Source, [PromoteAllScalars=true]),
+    TypedTable    = Table.TransformColumnTypes(Headers, {
+        {"amfi_code",          Int64.Type},
+        {"fund_house",         type text},
+        {"scheme_name",        type text},
+        {"category",           type text},
+        {"sub_category",       type text},
+        {"plan",               type text},
+        {"launch_date",        type date},
+        {"benchmark",          type text},
+        {"expense_ratio_pct",  type number},
+        {"exit_load_pct",      type number},
+        {"min_sip_amount",     type number},
+        {"min_lumpsum_amount", type number},
+        {"fund_manager",       type text},
+        {"risk_category",      type text},
+        {"sebi_category_code", type text}
+    })
+in
+    TypedTable
+
+
+// ════════════════════════════════════════════════════════════
+// TABLE 2: fact_NAV  (Query name: fact_NAV)
+// ════════════════════════════════════════════════════════════
+let
+    Source = Csv.Document(
+        File.Contents("D:\MutualFundAnalytics\data\processed\02_nav_history_cleaned.csv"),
+        [Delimiter=",", Columns=4, Encoding=65001, QuoteStyle=QuoteStyle.None]
+    ),
+    Headers    = Table.PromoteHeaders(Source, [PromoteAllScalars=true]),
+    TypedTable = Table.TransformColumnTypes(Headers, {
+        {"amfi_code",      Int64.Type},
+        {"date",           type date},
+        {"nav",            type number},
+        {"is_trading_day", Int64.Type}
+    }),
+    // Keep trading days only for performance calculations
+    TradingOnly = Table.SelectRows(TypedTable, each [is_trading_day] = 1),
+    // Add Year-Month column for time intelligence
+    AddYearMonth = Table.AddColumn(TradingOnly, "YearMonth",
+        each Date.ToText([date], "yyyy-MM"), type text),
+    AddYear = Table.AddColumn(AddYearMonth, "Year",
+        each Date.Year([date]), Int64.Type)
+in
+    AddYear
+
+
+// ════════════════════════════════════════════════════════════
+// TABLE 3: fact_AUM  (Query name: fact_AUM)
+// ════════════════════════════════════════════════════════════
+let
+    Source = Csv.Document(
+        File.Contents("D:\MutualFundAnalytics\data\processed\03_aum_by_fund_house_cleaned.csv"),
+        [Delimiter=",", Columns=5, Encoding=65001, QuoteStyle=QuoteStyle.None]
+    ),
+    Headers    = Table.PromoteHeaders(Source, [PromoteAllScalars=true]),
+    TypedTable = Table.TransformColumnTypes(Headers, {
+        {"date",           type date},
+        {"fund_house",     type text},
+        {"aum_lakh_crore", type number},
+        {"aum_crore",      type number},
+        {"num_schemes",    Int64.Type}
+    }),
+    AddYear = Table.AddColumn(TypedTable, "Year",
+        each Date.Year([date]), Int64.Type)
+in
+    AddYear
+
+
+// ════════════════════════════════════════════════════════════
+// TABLE 4: fact_SIPInflows  (Query name: fact_SIPInflows)
+// ════════════════════════════════════════════════════════════
+let
+    Source = Csv.Document(
+        File.Contents("D:\MutualFundAnalytics\data\processed\04_monthly_sip_inflows_cleaned.csv"),
+        [Delimiter=",", Columns=6, Encoding=65001, QuoteStyle=QuoteStyle.None]
+    ),
+    Headers    = Table.PromoteHeaders(Source, [PromoteAllScalars=true]),
+    TypedTable = Table.TransformColumnTypes(Headers, {
+        {"month",                   type date},
+        {"sip_inflow_crore",        type number},
+        {"active_sip_accounts_crore", type number},
+        {"new_sip_accounts_lakh",   type number},
+        {"sip_aum_lakh_crore",      type number},
+        {"yoy_growth_pct",          type number}
+    }),
+    AddYear = Table.AddColumn(TypedTable, "Year",
+        each Date.Year([month]), Int64.Type)
+in
+    AddYear
+
+
+// ════════════════════════════════════════════════════════════
+// TABLE 5: fact_Performance  (Query name: fact_Performance)
+// ════════════════════════════════════════════════════════════
+let
+    Source = Csv.Document(
+        File.Contents("D:\MutualFundAnalytics\data\processed\07_scheme_performance_cleaned.csv"),
+        [Delimiter=",", Columns=20, Encoding=65001, QuoteStyle=QuoteStyle.None]
+    ),
+    Headers    = Table.PromoteHeaders(Source, [PromoteAllScalars=true]),
+    TypedTable = Table.TransformColumnTypes(Headers, {
+        {"amfi_code",          Int64.Type},
+        {"scheme_name",        type text},
+        {"fund_house",         type text},
+        {"category",           type text},
+        {"plan",               type text},
+        {"return_1yr_pct",     type number},
+        {"return_3yr_pct",     type number},
+        {"return_5yr_pct",     type number},
+        {"benchmark_3yr_pct",  type number},
+        {"alpha",              type number},
+        {"beta",               type number},
+        {"sharpe_ratio",       type number},
+        {"sortino_ratio",      type number},
+        {"std_dev_ann_pct",    type number},
+        {"max_drawdown_pct",   type number},
+        {"aum_crore",          type number},
+        {"expense_ratio_pct",  type number},
+        {"morningstar_rating", Int64.Type},
+        {"risk_grade",         type text},
+        {"anomaly_flag",       Int64.Type}
+    })
+in
+    TypedTable
+
+
+// ════════════════════════════════════════════════════════════
+// TABLE 6: fact_Transactions  (Query name: fact_Transactions)
+// ════════════════════════════════════════════════════════════
+let
+    Source = Csv.Document(
+        File.Contents("D:\MutualFundAnalytics\data\processed\08_investor_transactions_cleaned.csv"),
+        [Delimiter=",", Columns=13, Encoding=65001, QuoteStyle=QuoteStyle.None]
+    ),
+    Headers    = Table.PromoteHeaders(Source, [PromoteAllScalars=true]),
+    TypedTable = Table.TransformColumnTypes(Headers, {
+        {"investor_id",          type text},
+        {"transaction_date",     type date},
+        {"amfi_code",            Int64.Type},
+        {"transaction_type",     type text},
+        {"amount_inr",           type number},
+        {"state",                type text},
+        {"city",                 type text},
+        {"city_tier",            type text},
+        {"age_group",            type text},
+        {"gender",               type text},
+        {"annual_income_lakh",   type number},
+        {"payment_mode",         type text},
+        {"kyc_status",           type text}
+    }),
+    AddMonth = Table.AddColumn(TypedTable, "Month",
+        each Date.ToText([transaction_date], "yyyy-MM"), type text),
+    AddYear = Table.AddColumn(AddMonth, "Year",
+        each Date.Year([transaction_date]), Int64.Type),
+    AddAmountCr = Table.AddColumn(AddYear, "amount_crore",
+        each [amount_inr] / 1e7, type number)
+in
+    AddAmountCr
+
+
+// ════════════════════════════════════════════════════════════
+// TABLE 7: fact_Scorecard  (Query name: fact_Scorecard)
+// ════════════════════════════════════════════════════════════
+let
+    Source = Csv.Document(
+        File.Contents("D:\MutualFundAnalytics\data\processed\fund_scorecard.csv"),
+        [Delimiter=",", Columns=22, Encoding=65001, QuoteStyle=QuoteStyle.None]
+    ),
+    Headers    = Table.PromoteHeaders(Source, [PromoteAllScalars=true]),
+    TypedTable = Table.TransformColumnTypes(Headers, {
+        {"overall_rank",         Int64.Type},
+        {"amfi_code",            Int64.Type},
+        {"scheme_name",          type text},
+        {"fund_house",           type text},
+        {"sub_category",         type text},
+        {"expense_ratio_pct",    type number},
+        {"cagr_1yr_pct",         type number},
+        {"cagr_3yr_pct",         type number},
+        {"cagr_5yr_pct",         type number},
+        {"sharpe_ratio_calc",    type number},
+        {"sortino_ratio_calc",   type number},
+        {"alpha_annualised",     type number},
+        {"beta",                 type number},
+        {"max_dd_pct",           type number},
+        {"composite_score",      type number}
+    })
+in
+    TypedTable
+
+
+// ════════════════════════════════════════════════════════════
+// TABLE 8: fact_AlphaBeta  (Query name: fact_AlphaBeta)
+// ════════════════════════════════════════════════════════════
+let
+    Source = Csv.Document(
+        File.Contents("D:\MutualFundAnalytics\data\processed\alpha_beta.csv"),
+        [Delimiter=",", Columns=8, Encoding=65001, QuoteStyle=QuoteStyle.None]
+    ),
+    Headers    = Table.PromoteHeaders(Source, [PromoteAllScalars=true]),
+    TypedTable = Table.TransformColumnTypes(Headers, {
+        {"amfi_code",         Int64.Type},
+        {"beta",              type number},
+        {"alpha_annualised",  type number},
+        {"r_squared",         type number},
+        {"p_value",           type number},
+        {"scheme_name",       type text},
+        {"sub_category",      type text},
+        {"fund_house",        type text}
+    })
+in
+    TypedTable

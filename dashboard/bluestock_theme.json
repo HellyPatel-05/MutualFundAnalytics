@@ -1,0 +1,36 @@
+{
+  "name": "Bluestock MF Theme",
+  "dataColors": [
+    "#1565C0",
+    "#43A047",
+    "#FB8C00",
+    "#E53935",
+    "#8E24AA",
+    "#00838F",
+    "#F9A825",
+    "#546E7A"
+  ],
+  "background": "#FFFFFF",
+  "foreground": "#1565C0",
+  "tableAccent": "#1565C0",
+  "visualStyles": {
+    "*": {
+      "*": {
+        "fontFamily": [{ "value": "Segoe UI" }],
+        "fontSize":   [{ "value": 11 }],
+        "background": [{ "color": { "solid": { "color": "#FFFFFF" } } }]
+      }
+    },
+    "card": {
+      "*": {
+        "calloutValue": [{ "fontSize": { "value": 28 }, "fontBold": [{ "value": true }] }],
+        "label":        [{ "color": { "solid": { "color": "#546E7A" } } }]
+      }
+    },
+    "slicer": {
+      "*": {
+        "background": [{ "color": { "solid": { "color": "#F5F7FA" } } }]
+      }
+    }
+  }
+}
