@@ -1,9 +1,56 @@
-AMFI Scheme Codes
+============================================================
+BLUESTOCK MF ANALYTICS — DAY 1 DATA QUALITY SUMMARY
+============================================================
 
-AMFI (Association of Mutual Funds in India) assigns a unique AMFI code to each mutual fund scheme.
+DATASETS LOADED
+----------------------------------------
+  01_fund_master.csv                            shape=(40, 15)
+  02_nav_history.csv                            shape=(46000, 3)
+  03_aum_by_fund_house.csv                      shape=(90, 5)
+  04_monthly_sip_inflows.csv                    shape=(48, 6)
+  05_category_inflows.csv                       shape=(144, 3)
+  06_industry_folio_count.csv                   shape=(21, 6)
+  07_scheme_performance.csv                     shape=(40, 19)
+  08_investor_transactions.csv                  shape=(32778, 13)
+  09_portfolio_holdings.csv                     shape=(322, 8)
+  10_benchmark_indices.csv                      shape=(8050, 3)
 
-These codes act as unique identifiers and help in tracking, managing, and linking mutual fund data across different datasets.
+AMFI CODE VALIDATION
+----------------------------------------
+  Fund master unique codes : 40
+  NAV history unique codes : 40
+  Codes matched            : 40
+  Missing in nav_history   : None
+  Extra in nav_history     : None
 
-In this project, AMFI codes are used to connect information between the fund_master dataset and the nav_history dataset.
+AMFI SCHEME CODE STRUCTURE
+----------------------------------------
+  AMFI codes are 6-digit numeric identifiers assigned by AMFI
+  (Association of Mutual Funds in India) to every registered
+  mutual fund scheme. They serve as primary keys across all
+  datasets in this project (fund master, NAV history,
+  transactions, performance snapshots).
+  Example: 119551 = SBI Bluechip Fund - Regular Plan - Growth
+           125497 = HDFC Top 100 Fund - Direct Plan - Growth
 
-Using AMFI codes ensures that NAV records, fund details, and scheme information correspond to the correct mutual fund scheme.
+ANOMALY NOTES
+----------------------------------------
+  01_fund_master.csv: No anomalies detected
+  02_nav_history.csv: No anomalies detected
+  03_aum_by_fund_house.csv: No anomalies detected
+  04_monthly_sip_inflows.csv: Missing values: {'yoy_growth_pct': np.int64(12)}
+  05_category_inflows.csv: No anomalies detected
+  06_industry_folio_count.csv: No anomalies detected
+  07_scheme_performance.csv: No anomalies detected
+  08_investor_transactions.csv: No anomalies detected
+  09_portfolio_holdings.csv: No anomalies detected
+  10_benchmark_indices.csv: No anomalies detected
+
+CONCLUSION
+----------------------------------------
+  All 10 datasets loaded successfully. No critical data quality
+  issues found. NAV > 0 validated. Transaction amounts > 0.
+  Expense ratios within SEBI-mandated range (0.1%–2.5%).
+  Return values within expected bounds (-50% to +100%).
+  Data is ready for Day 2 cleaning and SQLite loading.
+============================================================
