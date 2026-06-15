@@ -21,8 +21,8 @@ venv/
 Thumbs.db
 desktop.ini
 
-# Large data files (optional — comment out to track)
-# bluestock_mf.db
+# SQLite database — keep schema.sql instead
+*.db
 
 # IDE
 .vscode/

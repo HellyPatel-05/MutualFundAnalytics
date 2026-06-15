@@ -1,0 +1,4 @@
+# SQLite database lives here: bluestock_mf.db
+# The .db file is gitignored (binary + large).
+# To recreate it: python scripts/etl_pipeline.py
+# Schema reference: sql/schema.sql
